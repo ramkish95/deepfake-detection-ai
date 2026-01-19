@@ -113,20 +113,26 @@ if uploaded_file is not None:
                 cap.release()
                 
                 # --- DISPLAY RESULTS ---
+                # --- UPDATED RESULTS LOGIC ---
                 if len(predictions) > 0:
+                    # Use the MINIMUM score (lowest = most fake) instead of the AVERAGE
+                    min_pred = np.min(predictions) 
                     avg_pred = np.mean(predictions)
+                    
                     st.divider()
                     
-                    if avg_pred < 0.5:
-                        conf = (1 - avg_pred) * 100
+                    # If the worst frame is below 0.5, we flag it as a Deepfake
+                    if min_pred < 0.5:
+                        # We show the confidence of the most suspicious frame
+                        conf = (1 - min_pred) * 100
                         st.error(f"🚨 **RESULT: DEEPFAKE DETECTED**")
-                        st.metric("AI Confidence Score", f"{conf:.2f}%")
-                        st.warning("Forensic Note: The frequency heatmap shows artifacts unique to AI-upsampling.")
+                        st.metric("Peak Suspicion Score", f"{conf:.2f}%")
+                        st.warning(f"Forensic Note: Analysis of {len(predictions)} frames found digital inconsistencies. Even high-quality fakes often fail frame-to-frame consistency checks.")
                     else:
                         conf = avg_pred * 100
                         st.success(f"✅ **RESULT: AUTHENTIC VIDEO**")
                         st.metric("AI Confidence Score", f"{conf:.2f}%")
-                        st.write("Forensic Note: Pixel transitions match natural sensor noise patterns.")
+                        st.write("Forensic Note: All scanned frames passed the pixel-integrity test.")
                     
                     # --- EXTRA FEATURE: Download Report ---
                     report_text = f"Forensic Deepfake Report\nResult: {'FAKE' if avg_pred < 0.5 else 'REAL'}\nConfidence: {conf:.2f}%"
